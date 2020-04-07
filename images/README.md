@@ -9,6 +9,10 @@
 
 <img src="sac_mujoco.png" width=75% ></img>
 
+## TD3
+
+<img src="td3_mujoco.png" width=75%></img>
+
 
 ## TRPO
 

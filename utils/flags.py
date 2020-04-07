@@ -96,6 +96,32 @@ class FLAGS(BaseFLAGS):
             init_alpha = 1.0
             learn_alpha = True
 
+    class TD3(BaseFLAGS):
+        actor_hidden_sizes = [256, 256]
+        critic_hidden_sizes = [256, 256]
+
+        total_timesteps = int(1e6)
+        init_random_steps = int(10e3)
+        buffer_size = int(1e6)
+        batch_size = 256
+        eval_freq = int(1e4)
+        save_freq = int(1e6)
+        log_freq = int(2e3)
+
+        explore_noise = 0.1
+
+        class algo(BaseFLAGS):
+            gamma = 0.99
+
+            actor_lr = 3e-4
+            critic_lr = 3e-4
+
+            policy_update_freq = 2
+            policy_noise = 0.2
+            policy_noise_clip = 0.5
+
+            tau = 0.995
+
     class GAIL(BaseFLAGS):
         total_timesteps = int(3e6)
         eval_freq = 1
@@ -154,7 +180,12 @@ class FLAGS(BaseFLAGS):
         if os.path.exists('.git'):
             for t in range(60):
                 try:
-                    check_output(['git', 'checkout-index', '-a', '--prefix={}/src/'.format(cls.log_dir)])
+                    if sys.platform == 'Linux':
+                        cls.commit = check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
+                        check_output(['git', 'add', '.'])
+                        check_output(['git', 'checkout-index', '-a', '-f', '--prefix={}/src/'.format(cls.log_dir)])
+                    else:
+                        check_output(['git', 'checkout-index', '-a', '--prefix={}/src/'.format(cls.log_dir)])
                     break
                 except CalledProcessError:
                     pass

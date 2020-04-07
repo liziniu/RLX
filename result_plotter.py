@@ -83,7 +83,7 @@ def xy_fn(r):
     agent_name = splits[0]
     if agent_name in {'acer'}:
         x_name, y_name = 'ACER/iter', 'ACER/episode_returns'
-    elif agent_name in {'trpo', 'sac', 'gail'}:
+    elif agent_name in {'trpo', 'sac', 'td3', 'gail'}:
         x_name, y_name = 'Evaluate/iter', 'Evaluate/episode_returns'
     else:
         raise NotImplementedError('%s is not supported' % splits[0])

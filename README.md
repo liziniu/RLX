@@ -18,7 +18,7 @@ We don't aim to provide a universe interface for all algorithms on diverse envir
 
 - GAIL[MuJoCo]
 
-- TD3[To be added]
+- TD3[MuJoCo]
 
 - PPO[To be added]
 
