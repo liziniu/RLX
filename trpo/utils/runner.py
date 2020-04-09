@@ -12,13 +12,15 @@ class Runner(object):
     _n_steps: np.ndarray
     _returns: np.ndarray
 
-    def __init__(self, env: BaseBatchedEnv, max_steps: int, gamma=0.99, lambda_=0.95, rescale_action=False):
+    def __init__(self, env: BaseBatchedEnv, max_steps: int, gamma=0.99, lambda_=0.95, rescale_action=False,
+                 partial_episode_bootstrapping=False):
         self.env = env
         self.n_envs = env.n_envs
         self.gamma = gamma
         self.lambda_ = lambda_
         self.max_steps = max_steps
         self.rescale_action = rescale_action
+        self.partial_episode_bootstrapping = partial_episode_bootstrapping
         self._dtype = gen_dtype(env, 'state action next_state reward done timeout')
 
         self.reset()
@@ -47,8 +49,12 @@ class Runner(object):
             self._returns += rewards
             self._n_steps += 1
             timeouts = self._n_steps == self.max_steps
+            terminals = np.copy(dones)
+            for e, info in enumerate(infos):
+                if self.partial_episode_bootstrapping and info.get('TimeLimit.truncated', False):
+                    terminals[e] = False
 
-            steps = [self._states.copy(), unscaled_actions, next_states.copy(), rewards, dones, timeouts]
+            steps = [self._states.copy(), unscaled_actions, next_states.copy(), rewards, terminals, timeouts]
             dataset.extend(np.rec.fromarrays(steps, dtype=self._dtype))
 
             indices = np.where(dones | timeouts)[0]
