@@ -9,6 +9,8 @@
 
 <img src="sac_mujoco.png" width=75% ></img>
 
+Note that peb(partial episode boostrapping) = False.
+
 ## TD3
 
 <img src="td3_mujoco.png" width=75%></img>
@@ -18,6 +20,7 @@
 
 <img src="trpo_mujoco.png" width=75%></img>
 
+Note that peb(partial episode boostrapping) = False.
 
 ## GAIL
 

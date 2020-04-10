@@ -52,6 +52,7 @@ class FLAGS(BaseFLAGS):
         save_freq = int(1e6)
         eval_freq = int(1e4)
         normalization = True
+        peb = False
 
         class algo(BaseFLAGS):
             cg_damping = 0.1
@@ -81,6 +82,7 @@ class FLAGS(BaseFLAGS):
         eval_freq = int(1e4)
         save_freq = int(1e6)
         log_freq = int(2e3)
+        peb = True
 
         class algo(BaseFLAGS):
             gamma = 0.99
@@ -178,20 +180,23 @@ class FLAGS(BaseFLAGS):
         assert cls.TRPO.rollout_samples % cls.env.num_env == 0
 
         if os.path.exists('.git'):
-            for t in range(60):
+            for t in range(10):
                 try:
-                    if sys.platform == 'Linux':
+                    if sys.platform == 'linux':
                         cls.commit = check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
                         check_output(['git', 'add', '.'])
                         check_output(['git', 'checkout-index', '-a', '-f', '--prefix={}/src/'.format(cls.log_dir)])
+                        open(os.path.join(log_dir, 'diff.patch'), 'w').write(
+                            check_output(['git', '--no-pager', 'diff', 'HEAD']).decode('utf-8'))
                     else:
                         check_output(['git', 'checkout-index', '-a', '--prefix={}/src/'.format(cls.log_dir)])
                     break
-                except CalledProcessError:
-                    pass
+                except Exception as e:
+                    print(e)
+                    print('Try again...')
                 time.sleep(1)
             else:
-                raise RuntimeError('Failed after 60 trials.')
+                raise RuntimeError('Failed after 10 trials.')
 
         yaml.dump(cls.as_dict(), open(os.path.join(log_dir, 'config.yml'), 'w'), default_flow_style=False)
         # logger.add_sink(FileSink(os.path.join(log_dir, 'log.json')))

@@ -103,7 +103,7 @@ class SAC(nn.Module):
     def train(self, data):
         _, critic_loss, q_value, critic_norm = self.optimize_critic(
             states=data.state, actions=data.action, next_states=data.next_state, rewards=data.reward,
-            terminals=data.done | data.timeout,
+            terminals=data.done,
             fetch='critic_train critic_loss q_value critic_norm'
         )
         assert np.isfinite(critic_loss), 'critic_loss is Nan'

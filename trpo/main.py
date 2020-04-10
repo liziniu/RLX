@@ -31,7 +31,8 @@ def main():
     tf.get_default_session().run(tf.global_variables_initializer())
 
     saver = nn.ModuleDict({'policy': policy, 'vfn': vfn, 'normalizers': normalizers})
-    runner = Runner(env, max_steps=env.max_episode_steps, gamma=FLAGS.TRPO.gamma, lambda_=FLAGS.TRPO.lambda_)
+    runner = Runner(env, max_steps=env.max_episode_steps, gamma=FLAGS.TRPO.gamma, lambda_=FLAGS.TRPO.lambda_,
+                    partial_episode_bootstrapping=FLAGS.TRPO.peb)
     print(saver)
 
     max_ent_coef = FLAGS.TRPO.algo.ent_coef

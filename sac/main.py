@@ -32,7 +32,7 @@ def main():
     tf.get_default_session().run(tf.global_variables_initializer())
     sac.update_critic_target(tau=0.0)
 
-    dtype = gen_dtype(env, 'state action next_state reward done timeout')
+    dtype = gen_dtype(env, 'state action next_state reward done')
     buffer = Dataset(dtype=dtype, max_size=FLAGS.SAC.buffer_size)
     saver = nn.ModuleDict({'actor': actor, 'critic': critic})
     print(saver)
@@ -49,12 +49,16 @@ def main():
             actions = np.array([env.action_space.sample() for _ in range(env.n_envs)])
         else:
             actions = actor.get_actions(states)
-        next_states, rewards, dones, _ = env.step(actions)
+        next_states, rewards, dones, infos = env.step(actions)
         n_returns += rewards
         n_steps += 1
         timeouts = n_steps == env.max_episode_steps
+        terminals = np.copy(dones)
+        for e, info in enumerate(infos):
+            if FLAGS.SAC.peb and info.get('TimeLimit.truncated', False):
+                terminals[e] = False
 
-        transitions = [states, actions, next_states.copy(), rewards, dones, timeouts.copy()]
+        transitions = [states, actions, next_states.copy(), rewards, terminals]
         buffer.extend(np.rec.fromarrays(transitions, dtype=dtype))
 
         indices = np.where(dones | timeouts)[0]
@@ -66,13 +70,6 @@ def main():
             n_returns[indices] = 0
             n_steps[indices] = 0
         states = next_states.copy()
-
-        if t == 2000:
-            assert env.n_envs == 1
-            samples = buffer.sample(size=None, indices=np.arange(2000))
-            masks = 1 - (samples.done | samples.timeout)[..., np.newaxis]
-            masks = masks[:-1]
-            assert np.allclose(samples.state[1:] * masks, samples.next_state[:-1] * masks)
 
         if t >= FLAGS.SAC.init_random_steps:
             samples = buffer.sample(FLAGS.SAC.batch_size)

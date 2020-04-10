@@ -77,15 +77,14 @@ class Runner(object):
         use_next_vf = ~samples.done
         use_next_adv = ~(samples.done | samples.timeout)
 
-        next_values = vfn.get_values(samples[-1].next_state)
+        next_values = vfn.get_values(samples.reshape(-1).next_state).reshape(n_steps, self.n_envs)
         values = vfn.get_values(samples.reshape(-1).state).reshape(n_steps, self.n_envs)
         advantages = np.zeros((n_steps, self.n_envs), dtype=np.float32)
         last_gae_lambda = 0
 
         for t in reversed(range(n_steps)):
-            delta = samples[t].reward + self.gamma * next_values * use_next_vf[t] - values[t]
+            delta = samples[t].reward + self.gamma * next_values[t] * use_next_vf[t] - values[t]
             advantages[t] = last_gae_lambda = delta + self.gamma * self.lambda_ * last_gae_lambda * use_next_adv[t]
-            next_values = values[t]
         return advantages.reshape(-1), values.reshape(-1)
 
 

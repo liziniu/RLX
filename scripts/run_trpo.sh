@@ -5,6 +5,7 @@ set -x
 ENV=Hopper-v2
 NUM_ENV=1
 ROLLOUT_SAMPLES=1000
+PEB=True
 
 
 if [ "$(uname)" == "Darwin" ]; then
@@ -13,7 +14,8 @@ if [ "$(uname)" == "Darwin" ]; then
     env.id=${ENV} \
     env.num_env=${NUM_ENV} \
     env.env_type=mujoco \
-    TRPO.rollout_samples=${ROLLOUT_SAMPLES}
+    TRPO.rollout_samples=${ROLLOUT_SAMPLES} \
+    TRPO.peb=${PEB}
 elif [ "$(uname)" == "Linux" ]; then
   for ENV in Hopper-v2 HalfCheetah-v2 Ant-v2
   do
@@ -25,7 +27,8 @@ elif [ "$(uname)" == "Linux" ]; then
       env.id=${ENV} \
       env.num_env=${NUM_ENV} \
       env.env_type=mujoco \
-      TRPO.rollout_samples=${ROLLOUT_SAMPLES} & sleep 2
+      TRPO.rollout_samples=${ROLLOUT_SAMPLES}  \
+      TRPO.peb=${PEB}& sleep 2
     done
     wait
   done
