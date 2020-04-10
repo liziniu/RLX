@@ -47,16 +47,16 @@ def main():
             actions = np.array([env.action_space.sample() for _ in range(env.n_envs)])
         else:
             raw_actions = actor.get_actions(states)
-            noises = np.random.normal(loc=0., scale=FLAGS.TD3.explore_noise, size=actions.shape)
+            noises = np.random.normal(loc=0., scale=FLAGS.TD3.explore_noise, size=raw_actions.shape)
             actions = np.clip(raw_actions + noises, -1, 1)
-        next_states, rewards, dones, _ = env.step(actions)
+        next_states, rewards, dones, infos = env.step(actions)
         n_returns += rewards
         n_steps += 1
         timeouts = n_steps == env.max_episode_steps
-        terminals = np.zeros_like(dones)
-        for e, done in enumerate(dones):
-            if n_steps[e] < env.max_episode_steps:
-                terminals[e] = dones[e]
+        terminals = np.copy(dones)
+        for e, info in enumerate(infos):
+            if info.get('TimeLimit.truncated', False):
+                terminals[e] = False
 
         transitions = [states, actions, next_states.copy(), rewards, terminals, timeouts.copy()]
         buffer.extend(np.rec.fromarrays(transitions, dtype=dtype))
