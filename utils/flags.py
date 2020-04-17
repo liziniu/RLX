@@ -53,6 +53,7 @@ class FLAGS(BaseFLAGS):
         eval_freq = int(1e4)
         normalization = True
         peb = False
+        train_vf_first = True
 
         class algo(BaseFLAGS):
             cg_damping = 0.1
