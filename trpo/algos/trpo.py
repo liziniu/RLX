@@ -34,12 +34,12 @@ def conj_grad(mat_mul_vec: Callable[[np.ndarray], np.ndarray], b, n_iters=10, re
         mu = new_r_dot_r / r_dot_r
         p = r + mu * p
         r_dot_r = new_r_dot_r
-    return x, r_dot_r
+    return x
 
 
 class TRPO(nn.Module):
     def __init__(self, dim_state: int, dim_action: int, policy: BaseNNPolicy, vfn: BaseVFunction, max_kl: float,
-                 n_cg_iters: int, ent_coef=0.0, cg_damping=0.01, vf_lr=3e-4, n_vf_iters=3, train_vf_first=True):
+                 n_cg_iters: int, ent_coef=0.0, cg_damping=0.01, vf_lr=3e-4, n_vf_iters=3):
         super().__init__()
         self.dim_state = dim_state
         self.policy = policy
@@ -50,7 +50,6 @@ class TRPO(nn.Module):
         self.cg_damping = cg_damping
         self.n_vf_iters = n_vf_iters
         self.vf_lr = vf_lr
-        self.train_vf_first = train_vf_first
 
         # doing backtrace, so don't need to separate.
         self.flatten = nn.FlatParam(self.policy.parameters())
@@ -125,12 +124,6 @@ class TRPO(nn.Module):
         returns = advantages + values
         advantages = (advantages - advantages.mean()) / np.maximum(advantages.std(), 1e-8)
         assert np.isfinite(advantages).all()
-
-        if self.train_vf_first:
-            vf_dataset = Dataset.fromarrays([samples.state, returns],
-                                            dtype=[('state', ('f8', self.dim_state)), ('return_', 'f8')])
-            vf_loss = self.train_vf(vf_dataset)
-
         self.sync_old()
         old_loss, grad, dist_std, mean_kl, dist_mean = self.get_loss(
             samples.state, samples.action, advantages, ent_coef, fetch='loss flat_grad dist_std mean_kl dist_mean')
@@ -143,7 +136,7 @@ class TRPO(nn.Module):
             return self.get_hessian_vec_prod(samples.state, x, samples.action) + self.cg_damping * x
 
         assert np.isfinite(grad).all()
-        nat_grad, cg_residual = conj_grad(fisher_vec_prod, grad, n_iters=self.n_cg_iters, verbose=False)
+        nat_grad = conj_grad(fisher_vec_prod, grad, n_iters=self.n_cg_iters, verbose=False)
 
         assert np.isfinite(nat_grad).all()
 
@@ -171,16 +164,15 @@ class TRPO(nn.Module):
         for param in self.policy.parameters():
             param.invalidate()
 
-        if not self.train_vf_first:
-            vf_dataset = Dataset.fromarrays([samples.state, returns],
-                                            dtype=[('state', ('f8', self.dim_state)), ('return_', 'f8')])
-            vf_loss = self.train_vf(vf_dataset)
+        # optimize value function
+        vf_dataset = Dataset.fromarrays([samples.state, returns],
+                                        dtype=[('state', ('f8', self.dim_state)), ('return_', 'f8')])
+        vf_loss = self.train_vf(vf_dataset)
 
         info = dict(
             dist_mean=dist_mean,
             dist_std=dist_std,
             vf_loss=np.mean(vf_loss),
-            cg_residual=cg_residual,
         )
         return info
 

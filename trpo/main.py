@@ -26,9 +26,7 @@ def main():
     normalizers = Normalizers(dim_action=dim_action, dim_state=dim_state)
     policy = GaussianMLPPolicy(dim_state, dim_action, FLAGS.TRPO.policy_hidden_sizes, normalizer=normalizers.state)
     vfn = MLPVFunction(dim_state, FLAGS.TRPO.vf_hidden_sizes, normalizers.state)
-    algo = TRPO(vfn=vfn, policy=policy, dim_state=dim_state, dim_action=dim_action,
-                train_vf_first=FLAGS.TRPO.train_vf_first,
-                **FLAGS.TRPO.algo.as_dict())
+    algo = TRPO(vfn=vfn, policy=policy, dim_state=dim_state, dim_action=dim_action, **FLAGS.TRPO.algo.as_dict())
 
     tf.get_default_session().run(tf.global_variables_initializer())
 
@@ -58,7 +56,7 @@ def main():
                 masks = masks[:-1]
                 assert np.allclose(samples.state[1:] * masks, samples.next_state[:-1] * masks)
 
-        if FLAGS.TRPO.normalization and not FLAGS.TRPO.train_vf_first:
+        if FLAGS.TRPO.normalization:
             normalizers.state.update(data.state)
             normalizers.action.update(data.action)
             normalizers.diff.update(data.next_state - data.state)
@@ -74,10 +72,7 @@ def main():
                 lengths=int(np.mean(train_lengths) if len(train_lengths) > 0 else 0)),
             **train_info))
 
-        if FLAGS.TRPO.normalization and FLAGS.TRPO.train_vf_first:
-            normalizers.state.update(data.state)
-            normalizers.action.update(data.action)
-            normalizers.diff.update(data.next_state - data.state)
+        t += FLAGS.TRPO.rollout_samples
         if t % FLAGS.TRPO.save_freq == 0:
             np.save('{}/stage-{}'.format(FLAGS.log_dir, t), saver.state_dict())
             np.save('{}/final'.format(FLAGS.log_dir), saver.state_dict())
