@@ -40,7 +40,7 @@ class Discriminator(nn.Module):
 
     def forward(self, true_states: nn.Tensor, true_actions: nn.Tensor, fake_states: nn.Tensor, fake_actions: nn.Tensor,
                 true_masks: nn.Tensor):
-        true_logits = self.classifier(true_states, fake_actions)
+        true_logits = self.classifier(true_states, true_actions)
         fake_logits = self.classifier(fake_states, fake_actions)
 
         true_loss = tf.nn.sigmoid_cross_entropy_with_logits(
